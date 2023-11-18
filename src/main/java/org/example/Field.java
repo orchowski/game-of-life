@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Field {
+public class Field implements Runnable {
     private final int col;
     private final int row;
     private boolean alive = new Random().nextBoolean();
@@ -64,5 +64,10 @@ public class Field {
         if(!isAlive() && aliveNeighbours == 3){
             setAlive(true);
         }
+    }
+
+    @Override
+    public void run() {
+        nextPhase();
     }
 }

@@ -5,10 +5,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class GameBoard extends JComponent {
-    private final static int FIELD_SIZE = 20;
-    private final static int GRID_SIZE = 30;
+    private final static int FIELD_SIZE = 6;
+    private final static int GRID_SIZE = 30*5;
 
     private List<Field> fieldList = new ArrayList<>();
 
@@ -52,6 +53,28 @@ public class GameBoard extends JComponent {
     }
     public void nextGamePhase() {
         fieldList.forEach(Field::nextPhase);
+        fieldList.forEach(Field::switchToNewState);
+    }
+
+    public void nextGamePhaseInThreads(){
+        fieldList.parallelStream().map(field->Thread.ofPlatform().start(field)).forEach(x-> {
+            try {
+                x.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        fieldList.forEach(Field::switchToNewState);
+    }
+
+    public void nextGamePhaseInVirtualThreads(){
+        fieldList.parallelStream().map(Thread::startVirtualThread).forEach(x-> {
+            try {
+                x.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
         fieldList.forEach(Field::switchToNewState);
     }
 }
