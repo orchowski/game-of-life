@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class Field {
+public class Field implements Runnable {
     private final int col;
     private final int row;
     private boolean alive = new Random().nextBoolean();
@@ -12,10 +12,11 @@ public class Field {
 
     private List<Field> neighbours = new ArrayList<>();
 
-    public Field(int row, int col){
+    public Field(int row, int col) {
         this.row = row;
         this.col = col;
     }
+
     public boolean isAlive() {
         return alive;
     }
@@ -32,11 +33,11 @@ public class Field {
         return row;
     }
 
-    public void switchToNewState(){
+    public void switchToNewState() {
         alive = nextState;
     }
 
-    public void setNeighboursFromTheList(List<Field> fullFieldList, int gridSize){
+    public void setNeighboursFromTheList(List<Field> fullFieldList, int gridSize) {
         int minCol = col > 0 ? col - 1 : 0;
         int maxCol = col + 1 == gridSize ? gridSize : col + 1;
 
@@ -45,24 +46,29 @@ public class Field {
 
         var neighbours = fullFieldList.stream().filter(
                 field -> field.getRow() >= minRow && field.getRow() <= maxRow
-                &&  field.getCol() >= minCol && field.getCol() <= maxCol
+                        && field.getCol() >= minCol && field.getCol() <= maxCol
         ).toList();
         this.neighbours.addAll(neighbours);
         this.neighbours.remove(this);
     }
 
-    public void nextPhase(){
+    public void nextPhase() {
         long aliveNeighbours = neighbours.stream().filter(Field::isAlive).count();
-        if(isAlive() && aliveNeighbours < 2){
-           setAlive(false);
-        }
-
-        if(isAlive() && aliveNeighbours > 3){
+        if (isAlive() && aliveNeighbours < 2) {
             setAlive(false);
         }
 
-        if(!isAlive() && aliveNeighbours == 3){
+        if (isAlive() && aliveNeighbours > 3) {
+            setAlive(false);
+        }
+
+        if (!isAlive() && aliveNeighbours == 3) {
             setAlive(true);
         }
+    }
+
+    @Override
+    public void run() {
+        nextPhase();
     }
 }
