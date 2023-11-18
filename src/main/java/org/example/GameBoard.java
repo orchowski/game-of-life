@@ -5,21 +5,22 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class GameBoard extends JComponent {
-    private final static int FIELD_SIZE = 6;
-    private final static int GRID_SIZE = 30 * 5;
+    private final int fieldSize;
+    private final int gridSize;
 
     private List<Field> fieldList = new ArrayList<>();
 
-    public GameBoard() {
-        for (int row = 0; row < GRID_SIZE - 1; row++) {
-            for (int col = 0; col < GRID_SIZE - 1; col++) {
+    public GameBoard(int gridSize) {
+        this.gridSize = gridSize;
+        this.fieldSize = 1000/gridSize;
+        for (int row = 0; row < gridSize - 1; row++) {
+            for (int col = 0; col < gridSize - 1; col++) {
                 fieldList.add(new Field(row, col));
             }
         }
-        fieldList.forEach(field -> field.setNeighboursFromTheList(fieldList, GRID_SIZE));
+        fieldList.forEach(field -> field.setNeighboursFromTheList(fieldList, gridSize));
     }
 
 
@@ -39,19 +40,19 @@ public class GameBoard extends JComponent {
     }
 
     private int widthOf(Field field) {
-        return FIELD_SIZE;
+        return fieldSize;
     }
 
     private int heightOf(Field field) {
-        return FIELD_SIZE;
+        return fieldSize;
     }
 
     private int xOf(Field field) {
-        return FIELD_SIZE * field.getCol();
+        return fieldSize * field.getCol();
     }
 
     private int yOf(Field field) {
-        return FIELD_SIZE * field.getRow();
+        return fieldSize * field.getRow();
     }
 
     public void nextGamePhase() {
