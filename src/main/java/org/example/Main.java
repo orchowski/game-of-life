@@ -1,6 +1,8 @@
 package org.example;
 
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {
@@ -9,11 +11,16 @@ public class Main {
         frame.setSize(1000, 1010);
         var board = new GameBoard();
         frame.getContentPane().add(board);
-
+        List<Long> durations = new ArrayList<>();
         frame.setVisible(true);
-        while (true) {
-            board.nextGamePhaseInVirtualThreads();
+        while (durations.size()<100) {
+            long startTime = System.nanoTime();
+            board.nextGamePhase();
+            long endTime = System.nanoTime();
+            durations.add(endTime - startTime);
             board.repaint();
         }
+
+        System.out.println("Avg time: " + durations.stream().reduce((long)0, Long::sum)/durations.size());
     }
 }

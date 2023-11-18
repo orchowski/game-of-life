@@ -12,10 +12,11 @@ public class Field implements Runnable {
 
     private List<Field> neighbours = new ArrayList<>();
 
-    public Field(int row, int col){
+    public Field(int row, int col) {
         this.row = row;
         this.col = col;
     }
+
     public boolean isAlive() {
         return alive;
     }
@@ -32,11 +33,11 @@ public class Field implements Runnable {
         return row;
     }
 
-    public void switchToNewState(){
+    public void switchToNewState() {
         alive = nextState;
     }
 
-    public void setNeighboursFromTheList(List<Field> fullFieldList, int gridSize){
+    public void setNeighboursFromTheList(List<Field> fullFieldList, int gridSize) {
         int minCol = col > 0 ? col - 1 : 0;
         int maxCol = col + 1 == gridSize ? gridSize : col + 1;
 
@@ -45,24 +46,40 @@ public class Field implements Runnable {
 
         var neighbours = fullFieldList.stream().filter(
                 field -> field.getRow() >= minRow && field.getRow() <= maxRow
-                &&  field.getCol() >= minCol && field.getCol() <= maxCol
+                        && field.getCol() >= minCol && field.getCol() <= maxCol
         ).toList();
         this.neighbours.addAll(neighbours);
         this.neighbours.remove(this);
     }
 
-    public void nextPhase(){
+    public void nextPhase() {
         long aliveNeighbours = neighbours.stream().filter(Field::isAlive).count();
-        if(isAlive() && aliveNeighbours < 2){
-           setAlive(false);
-        }
-
-        if(isAlive() && aliveNeighbours > 3){
+        if (isAlive() && aliveNeighbours < 2) {
             setAlive(false);
         }
 
-        if(!isAlive() && aliveNeighbours == 3){
+        if (isAlive() && aliveNeighbours > 3) {
+            setAlive(false);
+        }
+
+        if (!isAlive() && aliveNeighbours == 3) {
             setAlive(true);
+        }
+        printFibonacci(100);
+        System.out.println(x);
+        x = 0;
+    }
+
+    int n1 = 0, n2 = 1, n3 = 0;
+    long x = 0;
+
+    void printFibonacci(int count) {
+        if (count > 0) {
+            n3 = n1 + n2;
+            n1 = n2;
+            n2 = n3;
+            x += n3;
+            printFibonacci(count - 1);
         }
     }
 
