@@ -51,7 +51,18 @@ public class Field {
         this.neighbours.remove(this);
     }
 
-    public List<Field> getNeighbours() {
-        return neighbours;
+    public void nextPhase(){
+        long aliveNeighbours = neighbours.stream().filter(Field::isAlive).count();
+        if(isAlive() && aliveNeighbours < 2){
+           setAlive(false);
+        }
+
+        if(isAlive() && aliveNeighbours > 3){
+            setAlive(false);
+        }
+
+        if(!isAlive() && aliveNeighbours == 3){
+            setAlive(true);
+        }
     }
 }

@@ -51,20 +51,7 @@ public class GameBoard extends JComponent {
         return FIELD_SIZE * field.getRow();
     }
     public void nextGamePhase() {
-        fieldList.forEach(field -> {
-            long aliveNeighbours = field.getNeighbours().stream().filter(Field::isAlive).count();
-            if(field.isAlive() && aliveNeighbours < 2){
-                field.setAlive(false);
-            }
-
-            if(field.isAlive() && aliveNeighbours > 3){
-                field.setAlive(false);
-            }
-
-            if(!field.isAlive() && aliveNeighbours == 3){
-                field.setAlive(true);
-            }
-        });
+        fieldList.forEach(Field::nextPhase);
         fieldList.forEach(Field::switchToNewState);
     }
 }
