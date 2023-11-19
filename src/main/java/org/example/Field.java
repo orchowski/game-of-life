@@ -3,18 +3,27 @@ package org.example;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Field implements Runnable {
     private final int col;
     private final int row;
+    private final Semaphore semaphore;
     private boolean alive = new Random().nextBoolean();
     private boolean nextState;
 
+    public AtomicBoolean getLock() {
+        return lock;
+    }
+
+    private AtomicBoolean lock = new AtomicBoolean(true);
     private List<Field> neighbours = new ArrayList<>();
 
-    public Field(int row, int col) {
+    public Field(int row, int col, Semaphore semaphore) {
         this.row = row;
         this.col = col;
+        this.semaphore = semaphore;
     }
 
     public boolean isAlive() {
@@ -69,6 +78,27 @@ public class Field implements Runnable {
 
     @Override
     public void run() {
-        nextPhase();
+        while (true) {
+            try {
+                Thread.sleep(1);
+                if (lock.get()) {
+                    continue;
+                }
+                semaphore.acquire();
+                nextPhase();
+                block();
+                semaphore.release();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void unblock() {
+        lock.set(false);
+    }
+
+    public void block() {
+        lock.set(true);
     }
 }

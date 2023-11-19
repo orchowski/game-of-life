@@ -5,21 +5,28 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.Semaphore;
 
 public class GameBoard extends JComponent {
-    private final static int FIELD_SIZE = 6;
-    private final static int GRID_SIZE = 30 * 5;
+    private final int fieldsize;
+    private final int gridsize;
+    private final List<Thread> t;
 
     private List<Field> fieldList = new ArrayList<>();
 
-    public GameBoard() {
-        for (int row = 0; row < GRID_SIZE - 1; row++) {
-            for (int col = 0; col < GRID_SIZE - 1; col++) {
-                fieldList.add(new Field(row, col));
+    public GameBoard(int gridsize, Semaphore semaphore, boolean useVirtualThreads) {
+        this.gridsize = gridsize;
+        this.fieldsize = 1000 / gridsize;
+        for (int row = 0; row < this.gridsize; row++) {
+            for (int col = 0; col < this.gridsize; col++) {
+                fieldList.add(new Field(row, col, semaphore));
             }
         }
-        fieldList.forEach(field -> field.setNeighboursFromTheList(fieldList, GRID_SIZE));
+
+        t = fieldList.stream().map(field -> {
+            field.setNeighboursFromTheList(fieldList, this.gridsize);
+            return useVirtualThreads ? Thread.startVirtualThread(field) : Thread.ofPlatform().start(field);
+        }).toList();
     }
 
 
@@ -30,6 +37,11 @@ public class GameBoard extends JComponent {
         g.setColor(Color.BLACK);
 
         for (var field : fieldList) {
+            try {
+                Thread.sleep(0);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             if (field.isAlive()) {
                 g2.fillRect(xOf(field), yOf(field), widthOf(field), heightOf(field));
             } else {
@@ -39,45 +51,30 @@ public class GameBoard extends JComponent {
     }
 
     private int widthOf(Field field) {
-        return FIELD_SIZE;
+        return fieldsize;
     }
 
     private int heightOf(Field field) {
-        return FIELD_SIZE;
+        return fieldsize;
     }
 
     private int xOf(Field field) {
-        return FIELD_SIZE * field.getCol();
+        return fieldsize * field.getCol();
     }
 
     private int yOf(Field field) {
-        return FIELD_SIZE * field.getRow();
+        return fieldsize * field.getRow();
     }
 
     public void nextGamePhase() {
-        fieldList.forEach(Field::nextPhase);
-        fieldList.forEach(Field::switchToNewState);
-    }
-
-    public void nextGamePhaseInThreads() {
-        fieldList.parallelStream().map(field -> Thread.ofPlatform().start(field)).forEach(x -> {
-            try {
-                x.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        for (Field f : fieldList) {
+            f.unblock();
+        }
+        while (true) {
+            if (fieldList.stream().allMatch(x->x.getLock().get())) {
+                fieldList.forEach(Field::switchToNewState);
+                break;
             }
-        });
-        fieldList.forEach(Field::switchToNewState);
-    }
-
-    public void nextGamePhaseInVirtualThreads() {
-        fieldList.parallelStream().map(Thread::startVirtualThread).forEach(x -> {
-            try {
-                x.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        fieldList.forEach(Field::switchToNewState);
+        }
     }
 }
