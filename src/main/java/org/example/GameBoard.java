@@ -5,28 +5,22 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 public class GameBoard extends JComponent {
-    private final int fieldsize;
-    private final int gridsize;
-    private final List<Thread> t;
+    private final int fieldSize;
+    private final int gridSize;
 
     private List<Field> fieldList = new ArrayList<>();
 
-    public GameBoard(int gridsize, Semaphore semaphore, boolean useVirtualThreads) {
-        this.gridsize = gridsize;
-        this.fieldsize = 1000 / gridsize;
-        for (int row = 0; row < this.gridsize; row++) {
-            for (int col = 0; col < this.gridsize; col++) {
-                fieldList.add(new Field(row, col, semaphore));
+    public GameBoard(int gridSize) {
+        this.gridSize = gridSize;
+        this.fieldSize = 1000/gridSize;
+        for (int row = 0; row < gridSize - 1; row++) {
+            for (int col = 0; col < gridSize - 1; col++) {
+                fieldList.add(new Field(row, col));
             }
         }
-
-        t = fieldList.stream().map(field -> {
-            field.setNeighboursFromTheList(fieldList, this.gridsize);
-            return useVirtualThreads ? Thread.startVirtualThread(field) : Thread.ofPlatform().start(field);
-        }).toList();
+        fieldList.forEach(field -> field.setNeighboursFromTheList(fieldList, gridSize));
     }
 
 
@@ -37,11 +31,6 @@ public class GameBoard extends JComponent {
         g.setColor(Color.BLACK);
 
         for (var field : fieldList) {
-            try {
-                Thread.sleep(0);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
             if (field.isAlive()) {
                 g2.fillRect(xOf(field), yOf(field), widthOf(field), heightOf(field));
             } else {
@@ -51,30 +40,45 @@ public class GameBoard extends JComponent {
     }
 
     private int widthOf(Field field) {
-        return fieldsize;
+        return fieldSize;
     }
 
     private int heightOf(Field field) {
-        return fieldsize;
+        return fieldSize;
     }
 
     private int xOf(Field field) {
-        return fieldsize * field.getCol();
+        return fieldSize * field.getCol();
     }
 
     private int yOf(Field field) {
-        return fieldsize * field.getRow();
+        return fieldSize * field.getRow();
     }
 
     public void nextGamePhase() {
-        for (Field f : fieldList) {
-            f.unblock();
-        }
-        while (true) {
-            if (fieldList.stream().allMatch(x->x.getLock().get())) {
-                fieldList.forEach(Field::switchToNewState);
-                break;
+        fieldList.forEach(Field::nextPhase);
+        fieldList.forEach(Field::switchToNewState);
+    }
+
+    public void nextGamePhaseInThreads() {
+        fieldList.parallelStream().map(field -> Thread.ofPlatform().start(field)).forEach(x -> {
+            try {
+                x.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        }
+        });
+        fieldList.forEach(Field::switchToNewState);
+    }
+
+    public void nextGamePhaseInVirtualThreads() {
+        fieldList.parallelStream().map(Thread::startVirtualThread).forEach(x -> {
+            try {
+                x.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        fieldList.forEach(Field::switchToNewState);
     }
 }
